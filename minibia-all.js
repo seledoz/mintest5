@@ -46,6 +46,7 @@
     "src/modules/fireball.js",
     "src/modules/auto-attack-aoe-layout.js",
     "src/modules/lure-mode.js",
+    "src/modules/lure-mode2-astar-route.js",
     "src/modules/aoe-cooldown-input-fix.js",
     "src/modules/low-cap-alarm.js",
     "src/modules/mining.js",
