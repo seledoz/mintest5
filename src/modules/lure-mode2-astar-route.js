@@ -66,6 +66,7 @@
 
   const matrixCache = new Map();
   const ALWAYS_WALKABLE_FIRE_FIELD_IDS = new Set([2123, 2124, 2125]);
+  const FIELD_IDS = new Set([1487,1488,1489,1490,1491,1492,1493,1494,1495,1496,1500,1501,1502,2118,2119,2120,2123,2124,2125,2127,2131,2132,2133]);
 
   function isAlwaysWalkableFireField(tile) {
     if (!tile) return false;
@@ -80,7 +81,7 @@
     try { add(tile.getThings?.()); } catch (_) {}
     try { add(tile.getObjects?.()); } catch (_) {}
     try { add(tile.getTopThing?.()); } catch (_) {}
-    return things.some((thing) => ALWAYS_WALKABLE_FIRE_FIELD_IDS.has(
+    return things.some((thing) => FIELD_IDS.has(
       Number(thing?.id ?? thing?.itemId ?? thing?.serverId ?? thing?.clientId)
     ));
   }
