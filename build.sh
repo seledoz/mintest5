@@ -33,9 +33,11 @@ cat \
   src/modules/lure-mode.js \
   src/modules/red-text-alert.js \
   src/modules/cave.js \
+  src/modules/cave-walk-over-fields-global.js \
   src/modules/cave-forward-loop.js \
   src/modules/cave-arrow-keys.js \
   src/modules/cave-arrow-field-detection-fix.js \
+  src/modules/fire-field-tile-scanner.js \
   src/modules/cave-waypoint-actions.js \
   src/modules/cave-active-timers.js \
   src/modules/waypoint-profiles.js \
