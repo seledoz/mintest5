@@ -115,7 +115,7 @@
         const p = pos(tile?.__position);
         if (!p || p.z !== z) continue;
         let walkable = false;
-        try { walkable = isAlwaysWalkableField(tile) || (!!bot.cave?.status?.()?.config?.walkOverFields && isFieldTile(tile)) || !!tile.isWalkable?.(); } catch (_) {}
+        try { walkable = isAlwaysWalkableField(tile) || isFieldTile(tile) || !!tile.isWalkable?.(); } catch (_) {}
         matrix.set(`${p.x},${p.y}`, walkable);
       }
     }
