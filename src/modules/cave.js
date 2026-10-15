@@ -97,7 +97,7 @@ window.__minibiaBotBundle.installCaveModule = function installCaveModule(bot) {
       enabled: false,
       activePresetName: defaultPresetName,
       pathfinderMode: 'game',
-      walkOverFields: false,
+      walkOverFields: true,
     },
     bot.storage.get(configStorageKey, {})
   );
@@ -438,7 +438,7 @@ window.__minibiaBotBundle.installCaveModule = function installCaveModule(bot) {
     const wrapper = function caveBotWalkOverFieldsIsWalkable(...args) {
       if (isTileWithAlwaysWalkableFireFieldId(this) ||
           isAlwaysWalkablePoisonFieldTileForCavePathing(this) ||
-          (config.walkOverFields && isWalkOverFieldTileForCavePathing(this))) return true;
+          isWalkOverFieldTileForCavePathing(this)) return true;
       return original.apply(this, args);
     };
     wrapper.__caveBotWalkOverFieldsApplied = true;
@@ -466,7 +466,7 @@ window.__minibiaBotBundle.installCaveModule = function installCaveModule(bot) {
           const walkable = tile.isWalkable ? tile.isWalkable() : false;
           matrix.set(key, isTileWithAlwaysWalkableFireFieldId(tile) ||
             isAlwaysWalkablePoisonFieldTileForCavePathing(tile) ||
-            (config.walkOverFields && isWalkOverFieldTileForCavePathing(tile)) ? true : walkable);
+            isWalkOverFieldTileForCavePathing(tile) ? true : walkable);
         }
       }
     } catch (e) {
@@ -1283,7 +1283,7 @@ window.__minibiaBotBundle.installCaveModule = function installCaveModule(bot) {
   }
 
   function pathContainsFireField(path) {
-    if (!config.walkOverFields || !Array.isArray(path)) return false;
+    if (!Array.isArray(path)) return false;
     return path.some((position) => isWalkOverFieldTileForCavePathing(getTileAt(position)));
   }
 
