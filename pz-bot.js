@@ -18,7 +18,7 @@
   };
 
   const repository = "seledoz/mintest5";
-  // Pin the runtime to the exact commit so a stale CDN/browser response cannot mix old module code with the current loader.
+  // Load the current Mintest5 main branch so this loader and its module sources stay on the same repository.
   const ref = "main";
   const rawBaseUrl = `https://raw.githubusercontent.com/${repository}/${ref}`;
   const sourceFiles = [
