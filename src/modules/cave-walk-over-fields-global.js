@@ -78,7 +78,10 @@ window.__minibiaBotBundle = window.__minibiaBotBundle || {};
   }
 
   function isAlwaysWalkableFieldTile(tile) {
-    return isAlwaysWalkableFireFieldTile(tile) || isPoisonFieldTile(tile);
+    if (isAlwaysWalkableFireFieldTile(tile)) return true;
+    return getThings(tile).some((thing) => ALWAYS_WALKABLE_POISON_FIELD_IDS.has(
+      Number(thing?.id ?? thing?.itemId ?? thing?.serverId ?? thing?.clientId)
+    ));
   }
 
   function isFireFieldTile(tile) {
