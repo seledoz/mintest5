@@ -52,6 +52,7 @@ window.__minibiaBotBundle.installCaveModule = function installCaveModule(bot) {
   // damage tiles, not blockers, so pathing must be allowed to cross them.
   // Classic Tibia poison-field stages. Some servers use the newer 1503 stage too.
   const POISON_FIELD_IDS = new Set([2127, 1490, 1496]);
+  const ALWAYS_WALKABLE_POISON_FIELD_IDS = new Set([2127]);
   const POISON_FIELD_PATTERN = /(?:poison|venom)\s*(?:field|wall|damage|ground|tile)/i;
   const ENERGY_FIELD_IDS = new Set([1491, 1495]);
   const ENERGY_FIELD_PATTERN = /(?:energy|electric)\s*(?:field|wall|damage|ground|tile)/i;
@@ -416,6 +417,13 @@ window.__minibiaBotBundle.installCaveModule = function installCaveModule(bot) {
       isEnergyFieldTileForCavePathing(tile);
   }
 
+  function isAlwaysWalkablePoisonFieldTileForCavePathing(tile) {
+    if (!tile) return false;
+    return getTileThings(tile).some((thing) => ALWAYS_WALKABLE_POISON_FIELD_IDS.has(
+      Number(thing?.id ?? thing?.itemId ?? thing?.serverId ?? thing?.clientId)
+    ));
+  }
+
   function patchFieldWalkabilityForCavePathing() {
     const position = normalizePosition(bot.getPlayerPosition());
     if (!position) return false;
@@ -429,7 +437,7 @@ window.__minibiaBotBundle.installCaveModule = function installCaveModule(bot) {
     const original = prototype.isWalkable;
     const wrapper = function caveBotWalkOverFieldsIsWalkable(...args) {
       if (isTileWithAlwaysWalkableFireFieldId(this) ||
-          isPoisonFieldTileForCavePathing(this) ||
+          isAlwaysWalkablePoisonFieldTileForCavePathing(this) ||
           (config.walkOverFields && isWalkOverFieldTileForCavePathing(this))) return true;
       return original.apply(this, args);
     };
@@ -457,7 +465,7 @@ window.__minibiaBotBundle.installCaveModule = function installCaveModule(bot) {
           const key = `${tile.__position.x},${tile.__position.y}`;
           const walkable = tile.isWalkable ? tile.isWalkable() : false;
           matrix.set(key, isTileWithAlwaysWalkableFireFieldId(tile) ||
-            isPoisonFieldTileForCavePathing(tile) ||
+            isAlwaysWalkablePoisonFieldTileForCavePathing(tile) ||
             (config.walkOverFields && isWalkOverFieldTileForCavePathing(tile)) ? true : walkable);
         }
       }
