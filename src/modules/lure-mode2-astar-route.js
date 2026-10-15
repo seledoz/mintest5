@@ -66,9 +66,10 @@
 
   const matrixCache = new Map();
   const ALWAYS_WALKABLE_FIRE_FIELD_IDS = new Set([2123, 2124, 2125]);
+  const ALWAYS_WALKABLE_POISON_FIELD_IDS = new Set([2127]);
   const FIELD_IDS = new Set([1487,1488,1489,1490,1491,1492,1493,1494,1495,1496,1500,1501,1502,2118,2119,2120,2123,2124,2125,2127,2131,2132,2133]);
 
-  function isAlwaysWalkableFireField(tile) {
+  function isFieldTile(tile) {
     if (!tile) return false;
     const things = [];
     const add = (value) => {
@@ -86,7 +87,22 @@
     ));
   }
 
-  function getWalkMatrix(z) {
+  function isAlwaysWalkableField(tile) {
+    if (!tile) return false;
+    const things = [];
+    const add = (value) => { if (!value) return; if (Array.isArray(value)) value.forEach(add); else if (!things.includes(value)) things.push(value); };
+    add(tile); add(tile.items); add(tile.things); add(tile.objects); add(tile.topThing);
+    try { add(tile.getItems?.()); } catch (_) {}
+    try { add(tile.getThings?.()); } catch (_) {}
+    try { add(tile.getObjects?.()); } catch (_) {}
+    try { add(tile.getTopThing?.()); } catch (_) {}
+    return things.some((thing) => {
+      const id = Number(thing?.id ?? thing?.itemId ?? thing?.serverId ?? thing?.clientId);
+      return ALWAYS_WALKABLE_FIRE_FIELD_IDS.has(id) || ALWAYS_WALKABLE_POISON_FIELD_IDS.has(id);
+    });
+  }
+
+  function getWalkMatrix(z, bot) {
     const key = String(z);
     const cached = matrixCache.get(key);
     if (cached && Date.now() - cached.at <= MATRIX_CACHE_MS) return cached.matrix;
@@ -99,7 +115,7 @@
         const p = pos(tile?.__position);
         if (!p || p.z !== z) continue;
         let walkable = false;
-        try { walkable = isAlwaysWalkableFireField(tile) || !!tile.isWalkable?.(); } catch (_) {}
+        try { walkable = isAlwaysWalkableField(tile) || (!!bot.cave?.status?.()?.config?.walkOverFields && isFieldTile(tile)) || !!tile.isWalkable?.(); } catch (_) {}
         matrix.set(`${p.x},${p.y}`, walkable);
       }
     }
@@ -148,7 +164,7 @@
     if (!from || !to || from.z !== to.z) return null;
     if (cheb(from, to) <= tolerance) return [from];
 
-    const matrix = getWalkMatrix(from.z);
+    const matrix = getWalkMatrix(from.z, bot);
     const temporarilyBlocked = options.temporarilyBlocked || null;
     const avoidFirstStep = pos(options.avoidFirstStep);
     const open = [{ ...from, g: 0, f: cheb(from, to), parent: null }];
