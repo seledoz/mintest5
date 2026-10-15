@@ -58,6 +58,8 @@ window.__minibiaBotBundle.installCaveArrowKeysModule = function installCaveArrow
   const damagingFieldPattern = /(?:fire|flame|poison|energy)\s*(?:field|wall|damage|ground|tile)/i;
   const ALWAYS_WALKABLE_FIRE_FIELD_IDS = new Set([2123, 2124, 2125]);
   const ALWAYS_WALKABLE_POISON_FIELD_IDS = new Set([2127]);
+  const ADDITIONAL_POISON_FIELD_IDS = new Set([1490, 1496]);
+  const ENERGY_FIELD_IDS = new Set([1491, 1495]);
 
   function normalizePosition(value) {
     if (!value) return null;
@@ -110,7 +112,7 @@ window.__minibiaBotBundle.installCaveArrowKeysModule = function installCaveArrow
     if (!tile) return null;
     for (const thing of getTileThings(tile)) {
       const id = Number(thing?.id);
-      if (damagingFieldIds.has(id)) return getThingName(thing) || `field ${id}`;
+      if (damagingFieldIds.has(id) || ADDITIONAL_POISON_FIELD_IDS.has(id) || ENERGY_FIELD_IDS.has(id)) return getThingName(thing) || `field ${id}`;
       const name = getThingName(thing);
       if (damagingFieldPattern.test(name)) return name;
     }
