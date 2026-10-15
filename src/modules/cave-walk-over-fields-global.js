@@ -123,7 +123,7 @@ window.__minibiaBotBundle = window.__minibiaBotBundle || {};
 
   function patchFieldDefinitions(bot) {
     const status = bot.cave?.status?.();
-    const enabled = !!status?.config?.walkOverFields;
+    const enabled = true;
     const client = window.gameClient;
     if (!client) return;
 
@@ -198,7 +198,7 @@ window.__minibiaBotBundle = window.__minibiaBotBundle || {};
 
   function patchFieldObject(object, bot) {
     if (!object || typeof object !== "object") return false;
-    const alwaysWalkable = isAlwaysWalkableFieldTile(object) || (bot.cave?.status?.()?.config?.walkOverFields && isWalkOverFieldTile(object));
+    const alwaysWalkable = isAlwaysWalkableFieldTile(object) || isWalkOverFieldTile(object);
     if (!alwaysWalkable) return false;
     let changed = false;
     const patchContainer = (target) => {
@@ -225,7 +225,7 @@ window.__minibiaBotBundle = window.__minibiaBotBundle || {};
       if (typeof object[name] !== "function" || object[name].__globalCaveFieldWalkable) continue;
       const original = object[name];
       const wrapper = function globalCaveFieldObjectPassability(...args) {
-        if (isAlwaysWalkableFieldTile(this) || (bot.cave?.status?.()?.config?.walkOverFields && isWalkOverFieldTile(this))) {
+        if (isAlwaysWalkableFieldTile(this) || isWalkOverFieldTile(this)) {
           return name === "isBlocking" || name === "blocksMovement" || name === "blocksPath" || name === "blocksPathfinding" ? false : true;
         }
         return original.apply(this, args);
@@ -243,7 +243,7 @@ window.__minibiaBotBundle = window.__minibiaBotBundle || {};
     const wrapper = function globalCaveFieldWalkable(...args) {
       const status = bot.cave?.status?.();
       if (isAlwaysWalkableFieldTile(this) ||
-          (status?.config?.walkOverFields && isWalkOverFieldTile(this))) return true;
+          isWalkOverFieldTile(this)) return true;
       return original.apply(this, args);
     };
     wrapper.__globalCaveFieldWalkable = true;
