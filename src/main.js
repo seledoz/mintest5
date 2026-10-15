@@ -392,6 +392,8 @@ if(window.minibiaBot) window.__minibiaBotBundle.installPlayerManaPotionModule(wi
     bot.cave?.stop?.();
     currentBundle.installCaveForwardLoopModule?.(bot);
     currentBundle.installCaveArrowKeysModule?.(bot);
+    currentBundle.installGlobalCaveFieldPathing?.(bot);
+    currentBundle.installCaveArrowFieldDetectionFix?.(bot);
     currentBundle.installEquipRingModule(bot);
     currentBundle.installMiningModule?.(bot);
     currentBundle.installAutoEatModule(bot);
