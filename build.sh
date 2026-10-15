@@ -31,6 +31,7 @@ cat \
   src/modules/auto-attack-gfb.js \
   src/modules/auto-attack-aoe-layout.js \
   src/modules/lure-mode.js \
+  src/modules/lure-mode2-astar-route.js \
   src/modules/red-text-alert.js \
   src/modules/cave.js \
   src/modules/cave-walk-over-fields-global.js \
