@@ -406,7 +406,7 @@ window.__minibiaBotBundle.installCaveModule = function installCaveModule(bot) {
         thing?.properties?.type, thing?.properties?.category, definition?.name,
         definition?.properties?.name, definition?.properties?.field, definition?.properties?.type,
         definition?.properties?.category].filter(Boolean).map(String).join(" ");
-      if (ENERGY_FIELD_PATTERN.test(text) || /\\benergy\\s*field\\b/i.test(text)) return true;
+      if (ENERGY_FIELD_PATTERN.test(text) || /\benergy\s*field\b/i.test(text)) return true;
     }
     return false;
   }
