@@ -12,8 +12,10 @@ window.__minibiaBotBundle = window.__minibiaBotBundle || {};
     2131, 2132, 2133,
   ]);
   const FIRE_FIELD_PATTERN = /(?:fire|flame)\s*(?:field|wall|damage|ground|tile)/i;
-  const POISON_FIELD_IDS = new Set([2127]);
+  const POISON_FIELD_IDS = new Set([2127, 1490, 1496]);
   const POISON_FIELD_PATTERN = /(?:poison|venom)\s*(?:field|wall|damage|ground|tile)/i;
+  const ENERGY_FIELD_IDS = new Set([1491, 1495]);
+  const ENERGY_FIELD_PATTERN = /(?:energy|electric)\s*(?:field|wall|damage|ground|tile)/i;
   // Fire 2123-2125 and poison 2127 must be accepted by every CaveBot
   // pathing mode. Other fire stages remain controlled by Walk Over Fields.
   const ALWAYS_WALKABLE_FIRE_FIELD_IDS = new Set([2123, 2124, 2125]);
@@ -96,6 +98,24 @@ window.__minibiaBotBundle = window.__minibiaBotBundle || {};
     return false;
   }
 
+  function isEnergyFieldTile(tile) {
+    for (const thing of getThings(tile)) {
+      const id = Number(thing?.id ?? thing?.itemId ?? thing?.serverId ?? thing?.clientId);
+      if (ENERGY_FIELD_IDS.has(id)) return true;
+      const definition = getDefinition(thing);
+      const text = [thing?.name, thing?.itemName, thing?.field, thing?.fieldType, thing?.type,
+        thing?.thingType, thing?.category, definition?.name, definition?.properties?.name,
+        definition?.properties?.field, definition?.properties?.type, definition?.properties?.category]
+        .filter(Boolean).map(String).join(" ");
+      if (ENERGY_FIELD_PATTERN.test(text)) return true;
+    }
+    return false;
+  }
+
+  function isWalkOverFieldTile(tile) {
+    return isFireFieldTile(tile) || isPoisonFieldTile(tile) || isEnergyFieldTile(tile);
+  }
+
   const definitionPatches = new Map();
 
   function patchFieldDefinitions(bot) {
@@ -111,7 +131,7 @@ window.__minibiaBotBundle = window.__minibiaBotBundle || {};
     ].filter(Boolean);
 
     for (const container of containers) {
-      for (const id of [...FIRE_FIELD_IDS, ...POISON_FIELD_IDS]) {
+      for (const id of [...FIRE_FIELD_IDS, ...POISON_FIELD_IDS, ...ENERGY_FIELD_IDS]) {
         const definition = container[id];
         // The three MinTest3 fire-field stages 2123-2125 are always ordinary
         // walkable squares. Patch their definition even when Walk Over Fields
@@ -119,7 +139,7 @@ window.__minibiaBotBundle = window.__minibiaBotBundle || {};
         // collision flags instead of the tile isWalkable() wrapper.
         const isPoison = POISON_FIELD_IDS.has(id);
         const alwaysWalkable = ALWAYS_WALKABLE_FIRE_FIELD_IDS.has(id) ||
-          ALWAYS_WALKABLE_POISON_FIELD_IDS.has(id) || isPoison;
+          ALWAYS_WALKABLE_POISON_FIELD_IDS.has(id);
         if (!definition || definitionPatches.has(definition)) continue;
         if (!enabled && !alwaysWalkable) continue;
         const props = definition.properties && typeof definition.properties === "object"
@@ -147,7 +167,7 @@ window.__minibiaBotBundle = window.__minibiaBotBundle || {};
         if (changed) definitionPatches.set(definition, {
           props,
           original,
-          alwaysWalkable: ALWAYS_WALKABLE_FIRE_FIELD_IDS.has(id) || isPoison,
+          alwaysWalkable: ALWAYS_WALKABLE_FIRE_FIELD_IDS.has(id) || ALWAYS_WALKABLE_POISON_FIELD_IDS.has(id),
         });
       }
     }
@@ -175,7 +195,7 @@ window.__minibiaBotBundle = window.__minibiaBotBundle || {};
 
   function patchFieldObject(object, bot) {
     if (!object || typeof object !== "object") return false;
-    const alwaysWalkable = isAlwaysWalkableFieldTile(object) || isFireFieldTile(object);
+    const alwaysWalkable = isAlwaysWalkableFieldTile(object) || (bot.cave?.status?.()?.config?.walkOverFields && isWalkOverFieldTile(object));
     if (!alwaysWalkable) return false;
     let changed = false;
     const patchContainer = (target) => {
@@ -202,7 +222,7 @@ window.__minibiaBotBundle = window.__minibiaBotBundle || {};
       if (typeof object[name] !== "function" || object[name].__globalCaveFieldWalkable) continue;
       const original = object[name];
       const wrapper = function globalCaveFieldObjectPassability(...args) {
-        if (isAlwaysWalkableFieldTile(this) || (bot.cave?.status?.()?.config?.walkOverFields && isFireFieldTile(this))) {
+        if (isAlwaysWalkableFieldTile(this) || (bot.cave?.status?.()?.config?.walkOverFields && isWalkOverFieldTile(this))) {
           return name === "isBlocking" || name === "blocksMovement" || name === "blocksPath" || name === "blocksPathfinding" ? false : true;
         }
         return original.apply(this, args);
@@ -220,7 +240,7 @@ window.__minibiaBotBundle = window.__minibiaBotBundle || {};
     const wrapper = function globalCaveFieldWalkable(...args) {
       const status = bot.cave?.status?.();
       if (isAlwaysWalkableFieldTile(this) ||
-          (status?.config?.walkOverFields && isFireFieldTile(this))) return true;
+          (status?.config?.walkOverFields && isWalkOverFieldTile(this))) return true;
       return original.apply(this, args);
     };
     wrapper.__globalCaveFieldWalkable = true;
@@ -281,44 +301,53 @@ window.__minibiaBotBundle = window.__minibiaBotBundle || {};
 
   function installPathfinderGuard(bot) {
     const pathfinder = window.gameClient?.world?.pathfinder;
-    if (!pathfinder || typeof pathfinder.findPath !== "function") return false;
-    if (pathfinder.findPath.__globalCaveFieldGuard) return true;
+    if (!pathfinder) return false;
+    let patched = false;
 
-    // Keep the game's native movement/pathfinding algorithm. Only change
-    // field collision passability; ordinary fire stages still honor the toggle.
-    const originalFindPath = pathfinder.findPath;
-    function guardedFindPath(...args) {
-      const status = bot.cave?.status?.();
-      // Always refresh the unconditional 2123-2125 collision patch before
-      // native pathfinding. Other field stages remain controlled by the toggle.
+    const prepare = () => {
       patchAllLoadedTiles(bot);
-      // Native pathfinder caches can retain a collision matrix created before
-      // the unconditional 2123-2125 patches were installed. Invalidate the
-      // native cache immediately before each CaveBot path request.
-      try {
-        if (typeof pathfinder.setPathfindCache === "function") {
-          pathfinder.setPathfindCache(null);
-        }
-      } catch (_) {}
-      const result = originalFindPath.apply(this, args);
-      try {
-        bot.logDebug?.("cave native pathfinder request", {
-          from: args[0] ? { x: Number(args[0].x), y: Number(args[0].y), z: Number(args[0].z) } : null,
-          to: args[1] ? { x: Number(args[1].x), y: Number(args[1].y), z: Number(args[1].z) } : null,
-          resultType: Array.isArray(result) ? "array" : typeof result,
-          resultLength: Array.isArray(result) ? result.length : null,
-        });
-      } catch (_) {}
-      return result;
+      try { pathfinder.setPathfindCache?.(null); } catch (_) {}
+    };
+
+    if (typeof pathfinder.findPath === "function" && !pathfinder.findPath.__globalCaveFieldGuard) {
+      const originalFindPath = pathfinder.findPath;
+      function guardedFindPath(...args) {
+        prepare();
+        const result = originalFindPath.apply(this, args);
+        try {
+          bot.logDebug?.("cave native findPath with field passability", {
+            from: args[0] ? { x: Number(args[0].x), y: Number(args[0].y), z: Number(args[0].z) } : null,
+            to: args[1] ? { x: Number(args[1].x), y: Number(args[1].y), z: Number(args[1].z) } : null,
+            resultType: Array.isArray(result) ? "array" : typeof result,
+            resultLength: Array.isArray(result) ? result.length : null,
+          });
+        } catch (_) {}
+        return result;
+      }
+      guardedFindPath.__globalCaveFieldGuard = true;
+      guardedFindPath.__globalCaveFieldOriginal = originalFindPath;
+      pathfinder.findPath = guardedFindPath;
+      patched = true;
     }
-    guardedFindPath.__globalCaveFieldGuard = true;
-    guardedFindPath.__globalCaveFieldOriginal = originalFindPath;
-    pathfinder.findPath = guardedFindPath;
-    return true;
+
+    // Auto Target uses search(), not findPath(). Apply the same field passability
+    // and refresh the native cache before reachability searches too.
+    if (typeof pathfinder.search === "function" && !pathfinder.search.__globalCaveFieldGuard) {
+      const originalSearch = pathfinder.search;
+      function guardedSearch(...args) {
+        prepare();
+        return originalSearch.apply(this, args);
+      }
+      guardedSearch.__globalCaveFieldGuard = true;
+      guardedSearch.__globalCaveFieldOriginal = originalSearch;
+      pathfinder.search = guardedSearch;
+      patched = true;
+    }
+    return patched;
   }
 
-  function install() {
-    const bot = window.minibiaBot;
+  function install(botOverride) {
+    const bot = botOverride || window.minibiaBot;
     if (!bot?.cave) return false;
     patchAllLoadedTiles(bot);
     installPathfinderGuard(bot);
@@ -338,5 +367,6 @@ window.__minibiaBotBundle = window.__minibiaBotBundle || {};
     }, 250);
   }
 
+  window.__minibiaBotBundle.installGlobalCaveFieldPathing = install;
   start();
 })();
