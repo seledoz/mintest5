@@ -17,7 +17,7 @@
     if (window.__minibiaLoaderRuntime) window.__minibiaLoaderRuntime.bot = null;
   };
 
-  const repository = "seledoz/mintest3";
+  const repository = "seledoz/mintest5";
   const ref = "main";
   const rawBaseUrl = `https://raw.githubusercontent.com/${repository}/${ref}`;
   const sourceFiles = [
@@ -51,9 +51,12 @@
     "src/modules/mining.js",
     "src/modules/red-text-alert.js",
     "src/modules/cave.js",
+    "src/modules/cave-walk-over-fields-global.js",
     "src/modules/cave-forward-loop.js",
     "src/modules/cave-arrow-keys.js",
+    "src/modules/cave-arrow-field-detection-fix.js",
     "src/modules/cave-waypoint-actions.js",
+    "src/modules/fire-field-tile-scanner.js",
     "src/modules/equip-ring.js",
     "src/modules/auto-eat.js",
     "src/modules/talk.js",
