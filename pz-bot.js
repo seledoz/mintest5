@@ -48,6 +48,7 @@
     "src/modules/fireball.js",
     "src/modules/auto-attack-aoe-layout.js",
     "src/modules/lure-mode.js",
+    "src/modules/lure-mode2-astar-route.js",
     "src/modules/aoe-cooldown-input-fix.js",
     "src/modules/low-cap-alarm.js",
     "src/modules/mining.js",
@@ -266,7 +267,7 @@
     let evaluationError=evaluate(code);
     if(evaluationError&&code!==rawCode){console.warn(`[minibia-bot] ${path} transformed source failed; retrying original source`,evaluationError);evaluationError=evaluate(rawCode);}
     if(evaluationError&&path==="src/modules/cave-waypoint-actions.js"){
-      const fallbackUrl="https://raw.githubusercontent.com/seledoz/mintest3/2f0938a7c745bd819fa22aa008d50628a2472e49/src/modules/cave-waypoint-actions.js";
+      const fallbackUrl="https://raw.githubusercontent.com/seledoz/mintest5/main/src/modules/cave-waypoint-actions.js";
       console.warn("[minibia-bot] Cave waypoint actions failed from main; loading known-good fallback commit",fallbackUrl,evaluationError);
       const fallbackResponse=await fetch(`${fallbackUrl}?t=${Date.now()}-${Math.random()}`,{cache:"no-store"});
       if(!fallbackResponse.ok)throw evaluationError;
