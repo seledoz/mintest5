@@ -275,7 +275,7 @@ window.__minibiaBotBundle = window.__minibiaBotBundle || {};
       const wrapper = function globalCaveFieldPassability(...args) {
         const status = bot.cave?.status?.();
         if (isAlwaysWalkableFieldTile(this) ||
-            (status?.config?.walkOverFields && isWalkOverFieldTile(this))) {
+            isWalkOverFieldTile(this)) {
           if (name === "isBlocking" || name === "blocksMovement") return false;
           return true;
         }
