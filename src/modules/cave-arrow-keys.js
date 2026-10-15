@@ -79,7 +79,7 @@ window.__minibiaBotBundle.installCaveArrowKeysModule = function installCaveArrow
   }
 
   function isWalkOverFieldsEnabled() {
-    return !!bot.cave?.status?.()?.config?.walkOverFields;
+    return true;
   }
 
   function getThingDefinition(id) {
